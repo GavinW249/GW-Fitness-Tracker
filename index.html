@@ -245,22 +245,16 @@
 
 <div class="controls">
   <div class="field">
-    <label for="clientSelect">Existing client</label>
-    <select id="clientSelect">
-      <option value="">— Select —</option>
-    </select>
-  </div>
-  <div class="field">
-    <label for="clientName">Client name</label>
+    <label for="clientName">Your name</label>
     <input type="text" id="clientName" placeholder="e.g. Sarah T" autocomplete="off">
   </div>
-  <button class="primary" id="loadBtn">Load / Start</button>
+  <button class="primary" id="loadBtn">Open my sheet</button>
   <button class="ghost" id="clearBtn" style="display:none;">Clear this client's data</button>
 </div>
 <div class="status" id="statusLine"></div>
 
 <div id="gate">
-  <p>Enter your name above (or pick it from the dropdown if you've used this before), then hit Load / Start to open your 25-week sheet. Your numbers save automatically as you type — no account or login needed.</p>
+  <p>Type your name above and hit "Open my sheet." If it's your first time, it'll start blank — if you've logged before, your numbers will load back in. Your numbers save automatically as you type — no account or login needed.</p>
 </div>
 
 <div id="app"></div>
@@ -306,30 +300,17 @@ function apiConfigured(){
   return API_URL && API_URL.indexOf('http') === 0;
 }
 
-async function refreshClientList(){
-  const sel = document.getElementById('clientSelect');
-  sel.innerHTML = '<option value="">— Select —</option>';
-  if(!apiConfigured()) return;
-  try{
-    const res = await fetch(API_URL + '?action=list');
-    const json = await res.json();
-    if(json && json.names){
-      json.names.sort().forEach(name=>{
-        const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
-        sel.appendChild(opt);
-      });
-    }
-  }catch(e){ /* no clients yet, or offline */ }
-}
+let isLoading = false;
 
 async function loadClient(name){
+  if(isLoading) return;
   if(!apiConfigured()){
     setStatus('App not connected — check API_URL is set.');
     return;
   }
   if(!name || !name.trim()){ setStatus('Enter a name first.'); return; }
   name = name.trim();
+  isLoading = true;
   currentClient = name;
   setStatus('Loading…','saving');
   try{
@@ -338,6 +319,7 @@ async function loadClient(name){
     clientData = (json && json.data) ? json.data : blankData();
   }catch(e){
     setStatus('Could not reach the server — check your connection and try again.');
+    isLoading = false;
     return;
   }
   document.getElementById('clientName').value = name;
@@ -346,6 +328,7 @@ async function loadClient(name){
   document.getElementById('clearBtn').style.display = 'inline-block';
   render();
   setStatus('Loaded '+name+'.','saved');
+  isLoading = false;
 }
 
 function queueSave(){
@@ -361,7 +344,6 @@ function queueSave(){
       const json = await res.json();
       if(json && json.ok){
         setStatus('Saved · '+ new Date().toLocaleTimeString(), 'saved');
-        refreshClientList();
       } else {
         setStatus('Save failed — check connection.','saving');
       }
@@ -476,9 +458,6 @@ document.getElementById('loadBtn').addEventListener('click', ()=>{
 document.getElementById('clientName').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') loadClient(e.target.value);
 });
-document.getElementById('clientSelect').addEventListener('change', (e)=>{
-  if(e.target.value) loadClient(e.target.value);
-});
 document.getElementById('clearBtn').addEventListener('click', async ()=>{
   if(!currentClient) return;
   if(!confirm('Clear all 25 weeks of data for '+currentClient+'? This cannot be undone.')) return;
@@ -486,8 +465,6 @@ document.getElementById('clearBtn').addEventListener('click', async ()=>{
   render();
   queueSave();
 });
-
-refreshClientList();
 </script>
 </body>
 </html>
