@@ -300,6 +300,16 @@ function apiConfigured(){
   return API_URL && API_URL.indexOf('http') === 0;
 }
 
+function fetchWithTimeout(url, options, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(()=> controller.abort(), ms || 12000);
+  return fetch(url, Object.assign({}, options, {
+    signal: controller.signal,
+    redirect: 'follow',
+    cache: 'no-store'
+  })).finally(()=> clearTimeout(timer));
+}
+
 let isLoading = false;
 
 async function loadClient(name){
@@ -314,11 +324,11 @@ async function loadClient(name){
   currentClient = name;
   setStatus('Loading…','saving');
   try{
-    const res = await fetch(API_URL + '?action=get&name=' + encodeURIComponent(name));
+    const res = await fetchWithTimeout(API_URL + '?action=get&name=' + encodeURIComponent(name), { method:'GET' }, 12000);
     const json = await res.json();
     clientData = (json && json.data) ? json.data : blankData();
   }catch(e){
-    setStatus('Could not reach the server — check your connection and try again.');
+    setStatus(e.name === 'AbortError' ? 'Timed out — tap "Open my sheet" again to retry.' : 'Could not reach the server — check your connection and try again.');
     isLoading = false;
     return;
   }
@@ -336,11 +346,11 @@ function queueSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async ()=>{
     try{
-      const res = await fetch(API_URL, {
+      const res = await fetchWithTimeout(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ name: currentClient, data: clientData })
-      });
+      }, 12000);
       const json = await res.json();
       if(json && json.ok){
         setStatus('Saved · '+ new Date().toLocaleTimeString(), 'saved');
@@ -348,7 +358,7 @@ function queueSave(){
         setStatus('Save failed — check connection.','saving');
       }
     }catch(e){
-      setStatus('Save failed — check connection.','saving');
+      setStatus(e.name === 'AbortError' ? 'Save timed out — check your connection.' : 'Save failed — check connection.','saving');
     }
   }, 500);
 }
