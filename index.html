@@ -1,70 +1,39 @@
-const SHEET_NAME = 'Data';
-
-function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(['ClientName', 'DataJSON', 'LastUpdated']);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GWFITNESS — 25 Week Tracker</title>
+<style>
+  :root{
+    --black:#0b0a0a;
+    --charcoal:#161414;
+    --panel:#1d1a1a;
+    --line:#332c2c;
+    --red:#b3121c;
+    --red-bright:#e81c26;
+    --paper:#ece7df;
+    --muted:#8a8078;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    --disp: 'Oswald', 'Arial Narrow', sans-serif;
   }
-  return sheet;
-}
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-function doGet(e) {
-  const sheet = getSheet_();
-  const action = e.parameter.action;
-
-  if (action === 'list') {
-    const vals = sheet.getDataRange().getValues();
-    const names = [];
-    for (let i = 1; i < vals.length; i++) {
-      if (vals[i][0]) names.push(vals[i][0]);
-    }
-    return jsonOut_({ names: names });
-  }
-
-  if (action === 'get') {
-    const name = e.parameter.name;
-    const vals = sheet.getDataRange().getValues();
-    for (let i = 1; i < vals.length; i++) {
-      if (vals[i][0] === name) {
-        return jsonOut_({ data: vals[i][1] ? JSON.parse(vals[i][1]) : null });
-      }
-    }
-    return jsonOut_({ data: null });
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--black);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(179,18,28,0.10), transparent 40%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 6px);
+    color:var(--paper);
+    font-family:var(--mono);
+    padding:0 0 80px 0;
+    min-height:100vh;
   }
 
-  return jsonOut_({ error: 'unknown action' });
-}
-
-function doPost(e) {
-  const sheet = getSheet_();
-  const body = JSON.parse(e.postData.contents);
-  const name = body.name;
-  const data = body.data;
-
-  if (!name) return jsonOut_({ ok: false, error: 'missing name' });
-
-  const vals = sheet.getDataRange().getValues();
-  let row = -1;
-  for (let i = 1; i < vals.length; i++) {
-    if (vals[i][0] === name) { row = i + 1; break; }
-  }
-
-  if (row === -1) {
-    sheet.appendRow([name, JSON.stringify(data), new Date()]);
-  } else {
-    sheet.getRange(row, 2).setValue(JSON.stringify(data));
-    sheet.getRange(row, 3).setValue(new Date());
-  }
-
-  return jsonOut_({ ok: true });
-}
-
-function jsonOut_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}    border-bottom:3px solid var(--red);
+  .hero{
+    border-bottom:3px solid var(--red);
     padding:28px 20px 20px;
     position:relative;
     overflow:hidden;
@@ -299,15 +268,10 @@ function jsonOut_(obj) {
 <footer>GWFITNESS — Coogee, Sydney</footer>
 
 <script>
-/* ============================================================
-   Google Apps Script Web App URL (ends in /exec)
-   See apps-script-backend.gs for setup steps if you ever need
-   to redeploy.
-   ============================================================ */
-const API_URL = "https://script.google.com/macros/s/AKfycbxL7lGvPdrBCp2sDndS4QH542fBJPfE5xrNMa3BnAwJqt_WX98anuaP31jPfqObiS6P/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw8cjsf9LSTzQWJgfXjiNcaedEajYT_UkdCa9joW9fGRepRAon3cOW3SAGeQVGkxdps/exec";
 
-const REP_SCHEME_A = ["10,10,12","8,8,10","6,6,8","4,4,6","2,2,4"]; // squats/rows/ohp
-const REP_SCHEME_HT = ["3x15","3x12","3x9","3x6","3x3"]; // single leg hip thrust
+const REP_SCHEME_A = ["10,10,12","8,8,10","6,6,8","4,4,6","2,2,4"];
+const REP_SCHEME_HT = ["3x15","3x12","3x9","3x6","3x3"];
 
 const EXERCISES = [
   { key:"squat", label:"BB Back Squats", type:"weight", schemeArr:REP_SCHEME_A },
@@ -433,7 +397,6 @@ function render(){
     const body = document.createElement('div');
     body.className = 'block-body';
 
-    // meta row: chin load only
     const meta = document.createElement('div');
     meta.className = 'meta-row';
     meta.innerHTML = `
@@ -449,7 +412,6 @@ function render(){
       });
     });
 
-    // table: rows = weeks, columns = exercises. Rep scheme is fixed for the whole block.
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     let headRow = '<tr><th style="text-align:left;">Week</th>';
