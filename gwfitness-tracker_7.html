@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GWFITNESS — 25 Week Tracker</title>
+<style>
+  :root{
+    --black:#0b0a0a;
+    --charcoal:#161414;
+    --panel:#1d1a1a;
+    --line:#332c2c;
+    --red:#b3121c;
+    --red-bright:#e81c26;
+    --paper:#ece7df;
+    --muted:#8a8078;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    --disp: 'Oswald', 'Arial Narrow', sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--black);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(179,18,28,0.10), transparent 40%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 6px);
+    color:var(--paper);
+    font-family:var(--mono);
+    padding:0 0 80px 0;
+    min-height:100vh;
+  }
+
+  /* header */
+  .hero{
+    border-bottom:3px solid var(--red);
+    padding:28px 20px 20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(179,18,28,0.14), transparent 70%);
+    pointer-events:none;
+  }
+  .brand{
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:clamp(28px,6vw,44px);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--paper);
+    margin:0;
+    line-height:1;
+  }
+  .brand span{color:var(--red-bright);}
+  .subhead{
+    font-size:12px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-top:6px;
+  }
+
+  .controls{
+    max-width:1100px;
+    margin:22px auto 0;
+    padding:0 20px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    position:relative;
+  }
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{
+    font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  }
+  select, input[type=text]{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--paper);
+    padding:9px 10px;
+    font-family:var(--mono);
+    font-size:14px;
+    border-radius:2px;
+    outline:none;
+  }
+  select:focus, input[type=text]:focus{ border-color:var(--red-bright); }
+  select{min-width:180px;}
+  #clientName{min-width:200px;}
+  button{
+    font-family:var(--disp);
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 16px;
+    border-radius:2px;
+    border:1px solid var(--red);
+    background:transparent;
+    color:var(--red-bright);
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  button:hover{ background:var(--red); color:var(--paper); }
+  button.primary{ background:var(--red); color:var(--paper); }
+  button.primary:hover{ background:var(--red-bright); border-color:var(--red-bright); }
+  button.ghost{ border-color:var(--line); color:var(--muted); }
+  button.ghost:hover{ background:var(--panel); color:var(--paper); border-color:var(--muted);}
+
+  .status{
+    max-width:1100px;
+    margin:10px auto 0;
+    padding:0 20px;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:1px;
+    min-height:14px;
+  }
+  .status.saved{ color:#7fbf6a; }
+  .status.saving{ color:var(--red-bright); }
+
+  #app{ max-width:1100px; margin:0 auto; padding:26px 20px; display:none; }
+  #gate{ max-width:600px; margin:60px auto; padding:0 20px; text-align:center; }
+  #gate p{ color:var(--muted); font-size:13px; line-height:1.7; }
+
+  .block{
+    background:var(--charcoal);
+    border:1px solid var(--line);
+    border-left:4px solid var(--red);
+    border-radius:3px;
+    margin-bottom:22px;
+    overflow:hidden;
+  }
+  .block-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:14px 18px;
+    background:var(--panel);
+    cursor:pointer;
+    user-select:none;
+    border-bottom:1px solid var(--line);
+  }
+  .block-title{
+    font-family:var(--disp);
+    font-weight:600;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    font-size:16px;
+    color:var(--paper);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .block-title .num{
+    color:var(--red-bright);
+    font-size:22px;
+    font-weight:700;
+  }
+  .block-sub{ font-size:11px; color:var(--muted); letter-spacing:1px; margin-top:2px;}
+  .chevron{ color:var(--muted); font-size:14px; transition:transform .2s; }
+  .block.collapsed .chevron{ transform:rotate(-90deg); }
+  .block-body{ padding:16px 18px 20px; }
+  .block.collapsed .block-body{ display:none; }
+
+  .meta-row{
+    display:flex; gap:14px; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .meta-row .field{ flex:1; min-width:200px; }
+  .meta-row input[type=text]{ width:100%; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th, td{ padding:8px 6px; text-align:center; border:1px solid var(--line); }
+  th{
+    font-family:var(--disp);
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--muted);
+    background:rgba(255,255,255,0.02);
+    font-weight:500;
+  }
+  th .wk{ display:block; color:var(--paper); font-size:13px; font-weight:600; }
+  td.exlabel{
+    text-align:left;
+    font-family:var(--disp);
+    font-size:13px;
+    letter-spacing:0.5px;
+    color:var(--paper);
+    background:rgba(255,255,255,0.02);
+    white-space:nowrap;
+  }
+  td.exlabel .scheme{
+    display:block;
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--muted);
+    letter-spacing:0;
+    margin-top:2px;
+  }
+  td .target{
+    display:block;
+    font-size:10px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  td input{
+    width:100%;
+    background:var(--black);
+    border:1px solid var(--line);
+    color:var(--paper);
+    text-align:center;
+    padding:7px 4px;
+    font-family:var(--mono);
+    font-size:13px;
+    border-radius:2px;
+    outline:none;
+  }
+  td input:focus{ border-color:var(--red-bright); background:#140f0f; }
+  td input::placeholder{ color:#4a4340; }
+
+  .abs-note{
+    font-size:10px;
+    color:var(--muted);
+    margin-top:8px;
+    font-style:italic;
+  }
+
+  footer{
+    max-width:1100px;
+    margin:10px auto 0;
+    padding:0 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:10px;
+    letter-spacing:1px;
+  }
+
+  @media (max-width:700px){
+    table, thead, tbody, th, td, tr{ display:block; }
+    thead{ display:none; }
+    tr{ margin-bottom:10px; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
+    td{ display:flex; justify-content:space-between; align-items:center; border:none; border-bottom:1px solid var(--line); text-align:right; }
+    td.exlabel{ background:var(--panel); justify-content:flex-start; }
+    td:before{ content: attr(data-label); font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+    td input{ width:100px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1 class="brand">GW<span>FITNESS</span></h1>
+  <div class="subhead">25-Week Lift Tracker — 5 Blocks × 5 Weeks</div>
+</div>
+
+<div class="controls">
+  <div class="field">
+    <label for="clientSelect">Existing client</label>
+    <select id="clientSelect">
+      <option value="">— Select —</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="clientName">Client name</label>
+    <input type="text" id="clientName" placeholder="e.g. Sarah T" autocomplete="off">
+  </div>
+  <button class="primary" id="loadBtn">Load / Start</button>
+  <button class="ghost" id="clearBtn" style="display:none;">Clear this client's data</button>
+</div>
+<div class="status" id="statusLine"></div>
+
+<div id="gate">
+  <p>Enter your name above (or pick it from the dropdown if you've used this before), then hit Load / Start to open your 25-week sheet. Your numbers save automatically as you type — no account or login needed.</p>
+</div>
+
+<div id="app"></div>
+
+<footer>GWFITNESS — Coogee, Sydney</footer>
+
+<script>
+/* ============================================================
+   PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW (ends in /exec)
+   See apps-script-backend.gs for the one-time setup steps.
+   ============================================================ */
+const API_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+const REP_SCHEME_A = ["10,10,12","8,8,10","6,6,8","4,4,6","2,2,4"]; // squats/rows/ohp
+const REP_SCHEME_HT = ["3x15","3x12","3x9","3x6","3x3"]; // single leg hip thrust
+
+const EXERCISES = [
+  { key:"squat", label:"BB Back Squats", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"chin",  label:"Chin Ups (max reps)", type:"chin", schemeArr:null },
+  { key:"abs",   label:"Abs", type:"text", schemeArr:null },
+  { key:"hipthrust", label:"Single Leg Hip Thrust", type:"weight", schemeArr:REP_SCHEME_HT },
+  { key:"row",   label:"BB Bent Rows", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"ohp",   label:"DB O/head Press", type:"weight", schemeArr:REP_SCHEME_A },
+];
+
+let currentClient = null;
+let clientData = null;
+let saveTimer = null;
+
+function blankData(){
+  return {
+    blocks: [1,2,3,4,5].map(b => ({
+      block:b,
+      absName:"",
+      chinLoad:"",
+      weeks: [1,2,3,4,5].map(()=>({squat:"",chin:"",abs:"",hipthrust:"",row:"",ohp:""}))
+    }))
+  };
+}
+
+function setStatus(text, cls){
+  const el = document.getElementById('statusLine');
+  el.textContent = text;
+  el.className = 'status' + (cls ? ' '+cls : '');
+}
+
+function apiConfigured(){
+  return API_URL && API_URL.indexOf('http') === 0;
+}
+
+async function refreshClientList(){
+  const sel = document.getElementById('clientSelect');
+  sel.innerHTML = '<option value="">— Select —</option>';
+  if(!apiConfigured()) return;
+  try{
+    const res = await fetch(API_URL + '?action=list');
+    const json = await res.json();
+    if(json && json.names){
+      json.names.sort().forEach(name=>{
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+  }catch(e){ /* no clients yet, or offline */ }
+}
+
+async function loadClient(name){
+  if(!apiConfigured()){
+    setStatus('App not connected yet — ask your trainer to finish setup.');
+    return;
+  }
+  if(!name || !name.trim()){ setStatus('Enter a name first.'); return; }
+  name = name.trim();
+  currentClient = name;
+  setStatus('Loading…','saving');
+  try{
+    const res = await fetch(API_URL + '?action=get&name=' + encodeURIComponent(name));
+    const json = await res.json();
+    clientData = (json && json.data) ? json.data : blankData();
+  }catch(e){
+    setStatus('Could not reach the server — check your connection and try again.');
+    return;
+  }
+  document.getElementById('clientName').value = name;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('clearBtn').style.display = 'inline-block';
+  render();
+  setStatus('Loaded '+name+'.','saved');
+}
+
+function queueSave(){
+  setStatus('Saving…','saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ name: currentClient, data: clientData })
+      });
+      const json = await res.json();
+      if(json && json.ok){
+        setStatus('Saved · '+ new Date().toLocaleTimeString(), 'saved');
+        refreshClientList();
+      } else {
+        setStatus('Save failed — check connection.','saving');
+      }
+    }catch(e){
+      setStatus('Save failed — check connection.','saving');
+    }
+  }, 500);
+}
+
+function weekLabel(blockIdx, weekIdx){
+  return (blockIdx*5) + weekIdx + 1;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  clientData.blocks.forEach((block, bIdx)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'block';
+    wrap.dataset.block = bIdx;
+
+    const head = document.createElement('div');
+    head.className = 'block-head';
+    head.innerHTML = `
+      <div>
+        <div class="block-title"><span class="num">${block.block}</span> BLOCK ${block.block}</div>
+        <div class="block-sub">WEEKS ${weekLabel(bIdx,0)}–${weekLabel(bIdx,4)}</div>
+      </div>
+      <div class="chevron">▾</div>`;
+    head.addEventListener('click', ()=>{ wrap.classList.toggle('collapsed'); });
+    wrap.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'block-body';
+
+    // meta row: abs name + chin load
+    const meta = document.createElement('div');
+    meta.className = 'meta-row';
+    meta.innerHTML = `
+      <div class="field">
+        <label>Abs exercise this block</label>
+        <input type="text" data-block="${bIdx}" data-field="absName" placeholder="e.g. Hanging leg raise 3x12" value="${escapeHtml(block.absName)}">
+      </div>
+      <div class="field">
+        <label>Chin up load this block</label>
+        <input type="text" data-block="${bIdx}" data-field="chinLoad" placeholder="e.g. bodyweight / +10kg / band" value="${escapeHtml(block.chinLoad)}">
+      </div>`;
+    body.appendChild(meta);
+    meta.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', (e)=>{
+        block[e.target.dataset.field] = e.target.value;
+        queueSave();
+      });
+    });
+
+    // table
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    let headRow = '<tr><th style="text-align:left;">Exercise</th>';
+    for(let w=0; w<5; w++){
+      headRow += `<th><span class="wk">WK ${weekLabel(bIdx,w)}</span></th>`;
+    }
+    headRow += '</tr>';
+    thead.innerHTML = headRow;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    EXERCISES.forEach(ex=>{
+      const tr = document.createElement('tr');
+      let labelCell = `<td class="exlabel">${ex.label}</td>`;
+      let cells = '';
+      for(let w=0; w<5; w++){
+        const val = block.weeks[w][ex.key] || '';
+        if(ex.key === 'abs'){
+          cells += `<td data-label="WK ${weekLabel(bIdx,w)}">
+            <input type="text" placeholder="reps/weight" data-block="${bIdx}" data-week="${w}" data-key="${ex.key}" value="${escapeHtml(val)}">
+          </td>`;
+        } else if(ex.type === 'chin'){
+          cells += `<td data-label="WK ${weekLabel(bIdx,w)}">
+            <input type="text" inputmode="numeric" placeholder="reps" data-block="${bIdx}" data-week="${w}" data-key="${ex.key}" value="${escapeHtml(val)}">
+          </td>`;
+        } else {
+          const target = ex.schemeArr[w];
+          cells += `<td data-label="WK ${weekLabel(bIdx,w)}">
+            <span class="target">${target}</span>
+            <input type="text" inputmode="decimal" placeholder="kg" data-block="${bIdx}" data-week="${w}" data-key="${ex.key}" value="${escapeHtml(val)}">
+          </td>`;
+        }
+      }
+      tr.innerHTML = labelCell + cells;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    body.appendChild(table);
+
+    const note = document.createElement('div');
+    note.className = 'abs-note';
+    note.textContent = 'Squats / Rows / OHP: weight logged applies across all sets shown for that week. Hip thrust: weight per leg.';
+    body.appendChild(note);
+
+    body.querySelectorAll('td input[data-week]').forEach(inp=>{
+      inp.addEventListener('input', (e)=>{
+        const b = +e.target.dataset.block, w = +e.target.dataset.week, k = e.target.dataset.key;
+        clientData.blocks[b].weeks[w][k] = e.target.value;
+        queueSave();
+      });
+    });
+
+    wrap.appendChild(body);
+    app.appendChild(wrap);
+  });
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.getElementById('loadBtn').addEventListener('click', ()=>{
+  loadClient(document.getElementById('clientName').value);
+});
+document.getElementById('clientName').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') loadClient(e.target.value);
+});
+document.getElementById('clientSelect').addEventListener('change', (e)=>{
+  if(e.target.value) loadClient(e.target.value);
+});
+document.getElementById('clearBtn').addEventListener('click', async ()=>{
+  if(!currentClient) return;
+  if(!confirm('Clear all 25 weeks of data for '+currentClient+'? This cannot be undone.')) return;
+  clientData = blankData();
+  render();
+  queueSave();
+});
+
+refreshClientList();
+</script>
+</body>
+</html>
