@@ -232,10 +232,17 @@ td input{ width:100px; }
 </div>
 <div class="controls">
 <div class="field">
-<label for="clientName">Your name</label>
+<label for="clientSelect">Your name</label>
+<select id="clientSelect">
+<option value="">Select your name…</option>
+<option value="__new__">+ New client (first time)</option>
+</select>
+</div>
+<div class="field" id="newNameField" style="display:none;">
+<label for="clientName">Type name (once)</label>
 <input type="text" id="clientName" placeholder="e.g. Sarah T" autocomplete="off">
 </div>
-<button class="primary" id="loadBtn">Open my sheet</button>
+<button class="primary" id="loadBtn" style="display:none;">Create sheet</button>
 <button class="ghost" id="clearBtn" style="display:none;">Clear this client's data</button>
 </div>
 <div class="status" id="statusLine"></div>
