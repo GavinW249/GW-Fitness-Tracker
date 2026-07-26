@@ -373,7 +373,7 @@ function queueSave(){
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ name: lookupSnapshot, displayName: nameSnapshot, data: dataSnapshot })
-      }, 12000);
+      }, 20000);
       const json = await res.json();
       if(tokenSnapshot !== loadToken) return;
       if(json && json.ok){
