@@ -489,6 +489,38 @@ function escapeHtml(str){
   return String(str==null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+async function populateClientDropdown(){
+  try{
+    const res = await fetch(API_URL + '?action=list');
+    const json = await res.json();
+    const select = document.getElementById('clientSelect');
+    (json.names || []).sort().forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      select.appendChild(opt);
+    });
+  }catch(e){
+    // If this fails, the "+ New client" option still works fine.
+  }
+}
+populateClientDropdown();
+
+document.getElementById('clientSelect').addEventListener('change', (e)=>{
+  const val = e.target.value;
+  const newField = document.getElementById('newNameField');
+  const loadBtn = document.getElementById('loadBtn');
+  if(val === '__new__'){
+    newField.style.display = 'flex';
+    loadBtn.style.display = 'inline-block';
+    document.getElementById('clientName').focus();
+  } else if(val){
+    newField.style.display = 'none';
+    loadBtn.style.display = 'none';
+    loadClient(val);
+  }
+});
+
 document.getElementById('loadBtn').addEventListener('click', ()=>{
   loadClient(document.getElementById('clientName').value);
 });
