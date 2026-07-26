@@ -1,164 +1,537 @@
-const SHEET_NAME = 'Data';
-const HEADERS = ['ClientName','DisplayName','Block','Week','Squat','ChinReps','ChinLoad','Abs','HipThrust','Row','OHP','Bench','LastUpdated'];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GWFITNESS — 25 Week Tracker</title>
+<style>
+:root{
+--black:#0b0a0a;
+--charcoal:#161414;
+--panel:#1d1a1a;
+--line:#332c2c;
+--red:#b3121c;
+--red-bright:#e81c26;
+--paper:#ece7df;
+--muted:#8a8078;
+--mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+--disp: 'Oswald', 'Arial Narrow', sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+*{box-sizing:border-box;}
+body{
+margin:0;
+background:var(--black);
+background-image:
+radial-gradient(circle at 15% 0%, rgba(179,18,28,0.10), transparent 40%),
+repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 6px);
+color:var(--paper);
+font-family:var(--mono);
+padding:0 0 80px 0;
+min-height:100vh;
+}
+.hero{
+border-bottom:3px solid var(--red);
+padding:28px 20px 20px;
+position:relative;
+overflow:hidden;
+}
+.hero::before{
+content:"";
+position:absolute; inset:0;
+background:linear-gradient(180deg, rgba(179,18,28,0.14), transparent 70%);
+pointer-events:none;
+}
+.brand{
+font-family:var(--disp);
+font-weight:700;
+font-size:clamp(28px,6vw,44px);
+letter-spacing:2px;
+text-transform:uppercase;
+color:var(--paper);
+margin:0;
+line-height:1;
+}
+.brand span{color:var(--red-bright);}
+.subhead{
+font-size:12px;
+letter-spacing:3px;
+text-transform:uppercase;
+color:var(--muted);
+margin-top:6px;
+}
+.controls{
+max-width:1100px;
+margin:22px auto 0;
+padding:0 20px;
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+align-items:flex-end;
+position:relative;
+}
+.field{display:flex; flex-direction:column; gap:5px;}
+.field label{
+font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+}
+select, input[type=text]{
+background:var(--panel);
+border:1px solid var(--line);
+color:var(--paper);
+padding:9px 10px;
+font-family:var(--mono);
+font-size:14px;
+border-radius:2px;
+outline:none;
+}
+select:focus, input[type=text]:focus{ border-color:var(--red-bright); }
+select{min-width:180px;}
+#clientName{min-width:200px;}
+button{
+font-family:var(--disp);
+letter-spacing:1.5px;
+text-transform:uppercase;
+font-size:13px;
+font-weight:600;
+padding:10px 16px;
+border-radius:2px;
+border:1px solid var(--red);
+background:transparent;
+color:var(--red-bright);
+cursor:pointer;
+transition:background .15s, color .15s;
+}
+button:hover{ background:var(--red); color:var(--paper); }
+button.primary{ background:var(--red); color:var(--paper); }
+button.primary:hover{ background:var(--red-bright); border-color:var(--red-bright); }
+button.ghost{ border-color:var(--line); color:var(--muted); }
+button.ghost:hover{ background:var(--panel); color:var(--paper); border-color:var(--muted);}
+.status{
+max-width:1100px;
+margin:10px auto 0;
+padding:0 20px;
+font-size:11px;
+color:var(--muted);
+letter-spacing:1px;
+min-height:14px;
+}
+.status.saved{ color:#7fbf6a; }
+.status.saving{ color:var(--red-bright); }
+#app{ max-width:1100px; margin:0 auto; padding:26px 20px; display:none; }
+#gate{ max-width:600px; margin:60px auto; padding:0 20px; text-align:center; }
+#gate p{ color:var(--muted); font-size:13px; line-height:1.7; }
+.block{
+background:var(--charcoal);
+border:1px solid var(--line);
+border-left:4px solid var(--red);
+border-radius:3px;
+margin-bottom:22px;
+overflow:hidden;
+}
+.block-head{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px 18px;
+background:var(--panel);
+cursor:pointer;
+user-select:none;
+border-bottom:1px solid var(--line);
+}
+.block-title{
+font-family:var(--disp);
+font-weight:600;
+letter-spacing:2px;
+text-transform:uppercase;
+font-size:16px;
+color:var(--paper);
+display:flex;
+align-items:center;
+gap:10px;
+}
+.block-title .num{
+color:var(--red-bright);
+font-size:22px;
+font-weight:700;
+}
+.block-sub{ font-size:11px; color:var(--muted); letter-spacing:1px; margin-top:2px;}
+.chevron{ color:var(--muted); font-size:14px; transition:transform .2s; }
+.block.collapsed .chevron{ transform:rotate(-90deg); }
+.block-body{ padding:16px 18px 20px; }
+.block.collapsed .block-body{ display:none; }
+.meta-row{
+display:flex; gap:14px; flex-wrap:wrap; margin-bottom:16px;
+}
+.meta-row .field{ flex:1; min-width:200px; }
+.meta-row input[type=text]{ width:100%; }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:8px 6px; text-align:center; border:1px solid var(--line); }
+th{
+font-family:var(--disp);
+font-size:11px;
+letter-spacing:1px;
+text-transform:uppercase;
+color:var(--muted);
+background:rgba(255,255,255,0.02);
+font-weight:500;
+}
+th .wk{ display:block; color:var(--paper); font-size:13px; font-weight:600; }
+td.exlabel{
+text-align:left;
+font-family:var(--disp);
+font-size:13px;
+letter-spacing:0.5px;
+color:var(--paper);
+background:rgba(255,255,255,0.02);
+white-space:nowrap;
+}
+td input{
+width:100%;
+background:var(--black);
+border:1px solid var(--line);
+color:var(--paper);
+text-align:center;
+padding:7px 4px;
+font-family:var(--mono);
+font-size:13px;
+border-radius:2px;
+outline:none;
+}
+td input:focus{ border-color:var(--red-bright); background:#140f0f; }
+td input::placeholder{ color:#4a4340; }
+.abs-note{
+font-size:10px;
+color:var(--muted);
+margin-top:8px;
+font-style:italic;
+}
+footer{
+max-width:1100px;
+margin:10px auto 0;
+padding:0 20px;
+text-align:center;
+color:var(--muted);
+font-size:10px;
+letter-spacing:1px;
+}
+@media (max-width:700px){
+table, thead, tbody, th, td, tr{ display:block; }
+thead{ display:none; }
+tr{ margin-bottom:10px; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
+td{ display:flex; justify-content:space-between; align-items:center; border:none; border-bottom:1px solid var(--line); text-align:right; }
+td.exlabel{ background:var(--panel); justify-content:flex-start; }
+td:before{ content: attr(data-label); font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+td input{ width:100px; }
+}
+</style>
+</head>
+<body>
+<div class="hero">
+<h1 class="brand">GW<span>FITNESS</span></h1>
+<div class="subhead">25-Week Lift Tracker — 5 Blocks × 5 Weeks</div>
+</div>
+<div class="controls">
+<div class="field">
+<label for="clientSelect">Your name</label>
+<select id="clientSelect">
+<option value="">Select your name…</option>
+<option value="__new__">+ New client (first time)</option>
+</select>
+</div>
+<div class="field" id="newNameField" style="display:none;">
+<label for="clientName">Type name (once)</label>
+<input type="text" id="clientName" placeholder="e.g. Sarah T" autocomplete="off">
+</div>
+<button class="primary" id="loadBtn" style="display:none;">Create sheet</button>
+<button class="ghost" id="clearBtn" style="display:none;">Clear this client's data</button>
+</div>
+<div class="status" id="statusLine"></div>
+<div id="gate">
+<p>Type your name above and hit "Open my sheet." If it's your first time, it'll start blank — if you've logged before, your numbers will load back in. Your numbers save automatically as you type — no account or login needed.</p>
+</div>
+<div id="app"></div>
+<footer>GWFITNESS — Coogee, Sydney</footer>
 
-function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-  }
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(HEADERS);
-  }
-  return sheet;
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbw8cjsf9LSTzQWJgfXjiNcaedEajYT_UkdCa9joW9fGRepRAon3cOW3SAGeQVGkxdps/exec";
+
+const REP_SCHEME_A = ["10,10,12","8,8,10","6,6,8","4,4,6","2,2,4"];
+const REP_SCHEME_HT = ["3x15","3x12","3x9","3x6","3x3"];
+
+const EXERCISES = [
+  { key:"squat", label:"BB Back Squats", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"row", label:"BB Bent Rows", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"ohp", label:"DB O/Head Press", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"hipthrust", label:"SL Hip Thrust", type:"weight", schemeArr:REP_SCHEME_HT },
+  { key:"bench", label:"BB Bench Press", type:"weight", schemeArr:REP_SCHEME_A },
+  { key:"chin", label:"Chin Ups (max reps)", type:"chin", schemeArr:null },
+];
+
+let currentClient = null;
+let clientData = null;
+let saveTimer = null;
+let loadToken = 0; // bumped every time a new client is loaded — invalidates stale saves
+
+function normalizeName(name){
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-/**
- * ONE-TIME SETUP STEP — run this manually, once, from the Apps Script editor.
- * Adds the Bench column before LastUpdated. Safe to run more than once —
- * checks first and does nothing if already migrated.
- *
- * How to run it: paste this whole file in, save (Cmd+S), then use the
- * runMigrationNow() helper at the very bottom the same way as last time.
- */
-function migrateAddBenchColumn_() {
-  const sheet = getSheet_();
-  const lastCol = sheet.getLastColumn();
-  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-
-  if (headers.indexOf('Bench') !== -1) {
-    Logger.log('Already migrated — nothing to do.');
-    return;
-  }
-
-  sheet.insertColumnBefore(lastCol); // inserts before LastUpdated, shifting it right
-  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  Logger.log('Bench column added.');
-}
-
-function normalizeName_(name) {
-  return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
-}
-
-function doGet(e) {
-  const sheet = getSheet_();
-  const action = e.parameter.action;
-  const vals = sheet.getDataRange().getValues();
-
-  if (action === 'list') {
-    const names = [];
-    for (let i = 1; i < vals.length; i++) {
-      const n = vals[i][1] || vals[i][0];
-      if (n && names.indexOf(n) === -1) names.push(n);
-    }
-    return jsonOut_({ names: names });
-  }
-
-  if (action === 'get') {
-    const name = normalizeName_(e.parameter.name);
-    const data = blankData_();
-    for (let i = 1; i < vals.length; i++) {
-      const row = vals[i];
-      if (normalizeName_(row[0]) !== name) continue;
-      const blockNum = row[2];
-      const weekNum = row[3];
-      const bIdx = blockNum - 1;
-      const wIdx = weekNum - ((bIdx) * 5) - 1;
-      if (bIdx < 0 || bIdx > 4 || wIdx < 0 || wIdx > 4) continue;
-      data.blocks[bIdx].weeks[wIdx] = {
-        squat: row[4] || '',
-        chin: row[5] || '',
-        hipthrust: row[8] || '',
-        row: row[9] || '',
-        ohp: row[10] || '',
-        bench: row[11] || ''
-      };
-      if (row[6]) data.blocks[bIdx].chinLoad = row[6];
-    }
-    return jsonOut_({ data: data });
-  }
-
-  return jsonOut_({ error: 'unknown action' });
-}
-
-function doPost(e) {
-  const lock = LockService.getScriptLock();
-  const gotLock = lock.tryLock(30000);
-  if (!gotLock) {
-    return jsonOut_({ ok: false, error: 'Server busy, try again.' });
-  }
-
-  try {
-    const sheet = getSheet_();
-    let body;
-    try {
-      body = JSON.parse(e.postData.contents);
-    } catch (err) {
-      return jsonOut_({ ok: false, error: 'Malformed request body.' });
-    }
-
-    const rawName = body.name;
-    const displayName = body.displayName || body.name;
-    const data = body.data;
-    if (!rawName || !data || !Array.isArray(data.blocks)) {
-      return jsonOut_({ ok: false, error: 'missing name or data' });
-    }
-    const name = normalizeName_(rawName);
-
-    const vals = sheet.getDataRange().getValues();
-    const rowIndex = {};
-    for (let i = 1; i < vals.length; i++) {
-      const key = normalizeName_(vals[i][0]) + '|' + vals[i][2] + '|' + vals[i][3];
-      rowIndex[key] = i + 1;
-    }
-
-    const now = new Date();
-    data.blocks.forEach((block) => {
-      block.weeks.forEach((wk, wIdx) => {
-        const weekNum = ((block.block - 1) * 5) + wIdx + 1;
-        const key = name + '|' + block.block + '|' + weekNum;
-        const existingRowNum = rowIndex[key];
-        // Preserve any old Abs value already sitting in the sheet — the
-        // app no longer edits this column, but we don't wipe it either.
-        const existingAbs = existingRowNum ? (vals[existingRowNum - 1][7] || '') : '';
-
-        const rowValues = [
-          name, displayName, block.block, weekNum,
-          wk.squat || '', wk.chin || '', block.chinLoad || '',
-          existingAbs,
-          wk.hipthrust || '', wk.row || '', wk.ohp || '', wk.bench || '',
-          now
-        ];
-        if (existingRowNum) {
-          sheet.getRange(existingRowNum, 1, 1, rowValues.length).setValues([rowValues]);
-        } else {
-          sheet.appendRow(rowValues);
-          rowIndex[key] = sheet.getLastRow();
-        }
-      });
-    });
-
-    return jsonOut_({ ok: true });
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function blankData_() {
+function blankData(){
   return {
     blocks: [1,2,3,4,5].map(b => ({
-      block: b,
-      chinLoad: "",
-      weeks: [1,2,3,4,5].map(() => ({squat:"",chin:"",hipthrust:"",row:"",ohp:"",bench:""}))
+      block:b,
+      chinLoad:"",
+      weeks: [1,2,3,4,5].map(()=>({squat:"",chin:"",hipthrust:"",row:"",ohp:"",bench:""}))
     }))
   };
 }
 
-function jsonOut_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+function setStatus(text, cls){
+  const el = document.getElementById('statusLine');
+  el.textContent = text;
+  el.className = 'status' + (cls ? ' '+cls : '');
 }
 
-function runMigrationNow() {
-  migrateAddBenchColumn_();
+function apiConfigured(){
+  return API_URL && API_URL.indexOf('http') === 0;
 }
+
+function fetchWithTimeout(url, options, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(()=> controller.abort(), ms || 12000);
+  return fetch(url, Object.assign({}, options, {
+    signal: controller.signal,
+    redirect: 'follow',
+    cache: 'no-store'
+  })).finally(()=> clearTimeout(timer));
+}
+
+let isLoading = false;
+
+async function loadClient(rawName){
+  if(isLoading) return;
+  if(!apiConfigured()){
+    setStatus('App not connected — check API_URL is set.');
+    return;
+  }
+  if(!rawName || !rawName.trim()){ setStatus('Enter a name first.'); return; }
+
+  const displayName = rawName.trim().replace(/\s+/g, ' ');
+  const lookupKey = normalizeName(rawName);
+
+  clearTimeout(saveTimer);
+  const myToken = ++loadToken;
+
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'block';
+
+  isLoading = true;
+  currentClient = displayName;
+  setStatus('Loading…','saving');
+
+  let json;
+  try{
+    const res = await fetchWithTimeout(API_URL + '?action=get&name=' + encodeURIComponent(lookupKey), { method:'GET' }, 12000);
+    json = await res.json();
+  }catch(e){
+    if(myToken === loadToken){
+      setStatus(e.name === 'AbortError' ? 'Timed out — tap "Open my sheet" again to retry.' : 'Could not reach the server — check your connection and try again.');
+    }
+    isLoading = false;
+    return;
+  }
+
+  if(myToken !== loadToken){
+    isLoading = false;
+    return;
+  }
+
+  clientData = (json && json.data) ? json.data : blankData();
+
+  document.getElementById('clientName').value = displayName;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('clearBtn').style.display = 'inline-block';
+  render();
+  setStatus('Loaded '+displayName+'.','saved');
+  isLoading = false;
+}
+
+function queueSave(){
+  setStatus('Saving…','saving');
+  clearTimeout(saveTimer);
+
+  const nameSnapshot = currentClient;
+  const lookupSnapshot = normalizeName(currentClient);
+  const dataSnapshot = JSON.parse(JSON.stringify(clientData));
+  const tokenSnapshot = loadToken;
+
+  saveTimer = setTimeout(async ()=>{
+    if(tokenSnapshot !== loadToken) return;
+    try{
+      const res = await fetchWithTimeout(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ name: lookupSnapshot, displayName: nameSnapshot, data: dataSnapshot })
+      }, 12000);
+      const json = await res.json();
+      if(tokenSnapshot !== loadToken) return;
+      if(json && json.ok){
+        setStatus('Saved · '+ new Date().toLocaleTimeString(), 'saved');
+      } else {
+        setStatus('Save failed — check connection.','saving');
+      }
+    }catch(e){
+      if(tokenSnapshot !== loadToken) return;
+      setStatus(e.name === 'AbortError' ? 'Save timed out — check your connection.' : 'Save failed — check connection.','saving');
+    }
+  }, 500);
+}
+
+function weekLabel(blockIdx, weekIdx){
+  return (blockIdx*5) + weekIdx + 1;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  clientData.blocks.forEach((block, bIdx)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'block';
+    wrap.dataset.block = bIdx;
+
+    const head = document.createElement('div');
+    head.className = 'block-head';
+    head.innerHTML = `
+      <div>
+        <div class="block-title"><span class="num">${block.block}</span> BLOCK ${block.block}</div>
+        <div class="block-sub">WEEKS ${weekLabel(bIdx,0)}–${weekLabel(bIdx,4)}</div>
+      </div>
+      <div class="chevron">▾</div>`;
+    head.addEventListener('click', ()=>{ wrap.classList.toggle('collapsed'); });
+    wrap.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'block-body';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta-row';
+    meta.innerHTML = `
+      <div class="field">
+        <label>Chin up load this block</label>
+        <input type="text" data-block="${bIdx}" data-field="chinLoad" placeholder="e.g. bodyweight / +10kg / red band" value="${escapeHtml(block.chinLoad)}">
+      </div>`;
+    body.appendChild(meta);
+
+    meta.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', (e)=>{
+        block[e.target.dataset.field] = e.target.value;
+        queueSave();
+      });
+    });
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    let headRow = '<tr><th style="text-align:left;">Week</th>';
+    EXERCISES.forEach(ex=>{
+      headRow += `<th>${ex.label}</th>`;
+    });
+    headRow += '</tr>';
+    thead.innerHTML = headRow;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for(let w=0; w<5; w++){
+      const tr = document.createElement('tr');
+      let rowHtml = `<td class="exlabel"><span class="wk">WK ${weekLabel(bIdx,w)}</span></td>`;
+      EXERCISES.forEach(ex=>{
+        const val = block.weeks[w][ex.key] || '';
+        if(ex.type === 'chin'){
+          rowHtml += `<td data-label="${ex.label}">
+            <input type="text" inputmode="numeric" placeholder="reps" data-block="${bIdx}" data-week="${w}" data-key="${ex.key}" value="${escapeHtml(val)}">
+          </td>`;
+        } else {
+          rowHtml += `<td data-label="${ex.label}">
+            <input type="text" inputmode="decimal" placeholder="kg" data-block="${bIdx}" data-week="${w}" data-key="${ex.key}" value="${escapeHtml(val)}">
+          </td>`;
+        }
+      });
+      tr.innerHTML = rowHtml;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    body.appendChild(table);
+
+    const note = document.createElement('div');
+    note.className = 'abs-note';
+    note.textContent = 'Squats / Rows / OHP: weight logged applies across all sets. Hip thrust: weight per leg.';
+    body.appendChild(note);
+
+    body.querySelectorAll('td input[data-week]').forEach(inp=>{
+      inp.addEventListener('input', (e)=>{
+        const b = +e.target.dataset.block, w = +e.target.dataset.week, k = e.target.dataset.key;
+        clientData.blocks[b].weeks[w][k] = e.target.value;
+        queueSave();
+      });
+    });
+
+    wrap.appendChild(body);
+    app.appendChild(wrap);
+  });
+}
+
+function escapeHtml(str){
+  return String(str==null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function populateClientDropdown(){
+  try{
+    const res = await fetch(API_URL + '?action=list');
+    const json = await res.json();
+    const select = document.getElementById('clientSelect');
+    (json.names || []).sort().forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      select.appendChild(opt);
+    });
+  }catch(e){
+    // If this fails, the "+ New client" option still works fine.
+  }
+}
+populateClientDropdown();
+
+document.getElementById('clientSelect').addEventListener('change', (e)=>{
+  const val = e.target.value;
+  const newField = document.getElementById('newNameField');
+  const loadBtn = document.getElementById('loadBtn');
+  if(val === '__new__'){
+    newField.style.display = 'flex';
+    loadBtn.style.display = 'inline-block';
+    document.getElementById('clientName').focus();
+  } else if(val){
+    newField.style.display = 'none';
+    loadBtn.style.display = 'none';
+    loadClient(val);
+  }
+});
+
+document.getElementById('loadBtn').addEventListener('click', ()=>{
+  loadClient(document.getElementById('clientName').value);
+});
+
+document.getElementById('clientName').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') loadClient(e.target.value);
+});
+
+document.getElementById('clearBtn').addEventListener('click', async ()=>{
+  if(!currentClient) return;
+  if(!confirm('Clear all 25 weeks of data for '+currentClient+'? This cannot be undone.')) return;
+  clientData = blankData();
+  render();
+  queueSave();
+});
+</script>
+</body>
+</html>
